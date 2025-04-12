@@ -17,7 +17,7 @@ function App() {
             const filtered = results.data
               .filter(
                 (row) =>
-                  row.measure === "Incidence" &&
+                  row.measure === "Prevalence" &&
                   row.metric === "Rate" &&
                   row.age === "55+ years" &&
                   row.sex === "Both" &&
@@ -26,13 +26,10 @@ function App() {
               )
               .map((row) => {
                 const val = parseFloat(row.val);
-                const coords = countryLatLong[row.location];
 
                 return {
                   country: row.location,
                   value: val,
-                  lat: coords.lat,
-                  lon: coords.lon,
                 };
               });
 
