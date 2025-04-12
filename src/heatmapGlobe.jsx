@@ -22,7 +22,7 @@ const HeatmapGlobe = ({ data }) => {
         viewerInstance.current = new Viewer(viewerRef.current);
 
         // Load the country borders json
-        const geoJsonUrl = "../data/countries.geo.json";
+        const geoJsonUrl = "../data/countries.geo2.json";
         GeoJsonDataSource.load(geoJsonUrl, {
             stroke: Color.BLUE, // Border color
             fill: Color.PINK.withAlpha(0.5),
