@@ -40,8 +40,7 @@ with open("countries.geo2.json", "r", encoding="utf-8") as geojson_file:
 
 # Step 3: Merge by ISO3 (e.g., 'USA', 'CHN', etc.)
 for feature in geo_data["features"]:
-    country_name = feature["properties"].get("name_en")
-    iso3 = get_iso3(country_name)
+    iso3 = feature["properties"].get("iso_a3")
     if iso3 in dementia_data:
         feature["properties"].update(dementia_data[iso3])
         print(f"success: {dementia_data[iso3]}")

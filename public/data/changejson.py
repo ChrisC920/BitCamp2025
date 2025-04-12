@@ -1,11 +1,11 @@
 import json
 
 # Load the JSON file
-with open('countries.geo2.json', 'r', encoding='utf-8') as f:
+with open('countries.geo.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
 
 # Specify the properties to keep
-properties_to_keep = ['formal_en', 'economy', 'pop_year', 'pop_rank', 'pop_est', 'income_grp', 'abbrev,' 'continent', 'subregion', 'name_en']  # Add all properties you want to keep
+properties_to_keep = ['formal_en', 'economy', 'pop_year', 'pop_rank', 'pop_est', 'income_grp', 'abbrev,' 'continent', 'subregion', 'name_en', 'iso_a2', 'iso_a3']  # Add all properties you want to keep
 
 # Iterate through each feature and retain only the specified properties
 for feature in data.get('features', []):
