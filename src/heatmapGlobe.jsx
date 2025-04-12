@@ -1,4 +1,3 @@
-// HeatmapGlobe.js
 import React, { useEffect, useRef } from "react";
 import {
     Viewer,
@@ -6,19 +5,34 @@ import {
     Color,
     LabelStyle,
     VerticalOrigin,
-    Cartesian2
+    Cartesian2,
+    GeoJsonDataSource,
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 
 window.CESIUM_BASE_URL = "/cesium";
-
 
 const HeatmapGlobe = ({ data }) => {
     const viewerRef = useRef(null);
     const viewerInstance = useRef(null);
 
     useEffect(() => {
+        // Initialize the Cesium viewer
         viewerInstance.current = new Viewer(viewerRef.current);
+
+        // Load the country borders GeoJSON
+        const geoJsonUrl = "/data/countries.geo.json";
+        GeoJsonDataSource.load(geoJsonUrl, {
+            stroke: Color.BLUE, // Border color
+            fill: Color.YELLOW.withAlpha(0.15), // Country fill (translucent)
+            strokeWidth: 1.5,
+        })
+            .then((dataSource) => {
+                viewerInstance.current.dataSources.add(dataSource);
+            })
+            .catch((error) => {
+                console.error("Error loading GeoJSON:", error);
+            });
 
         return () => {
             if (viewerInstance.current) {
@@ -31,12 +45,11 @@ const HeatmapGlobe = ({ data }) => {
         const viewer = viewerInstance.current;
         if (!viewer) return;
 
-        // Clear previous entities
         viewer.entities.removeAll();
 
         data.forEach((point) => {
-            const intensity = Math.min(point.value / 3000, 1.0); // Normalize for color
-            const color = Color.fromHsl((1 - intensity) * 0.6, 1, 0.5); // Heat color (red → yellow)
+            const intensity = Math.min(point.value / 3000, 1.0); // Normalize for color scale
+            const color = Color.fromHsl((1 - intensity) * 0.6, 1, 0.5); // Red → Yellow
 
             viewer.entities.add({
                 position: Cartesian3.fromDegrees(point.lon, point.lat),
@@ -49,8 +62,7 @@ const HeatmapGlobe = ({ data }) => {
                     font: "12px sans-serif",
                     fillColor: Color.WHITE,
                     verticalOrigin: VerticalOrigin.BOTTOM,
-                    pixelOffset: new Cartesian2(0, -12),
-
+                    pixelOffset: new Cartesian2(0, -14),
                 },
             });
         });
