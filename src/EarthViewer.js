@@ -7,6 +7,7 @@ window.CESIUM_BASE_URL = "/cesium";
 
 function EarthViewer() {
     const viewerRef = useRef(null);
+    const test = null;
 
     useEffect(() => {
         const viewer = new Viewer(viewerRef.current);
