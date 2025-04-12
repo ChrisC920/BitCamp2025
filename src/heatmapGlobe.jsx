@@ -8,6 +8,7 @@ import {
     Cartesian2,
     GeoJsonDataSource,
 } from "cesium";
+import * as Cesium from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 
 window.CESIUM_BASE_URL = "/cesium";
@@ -17,15 +18,16 @@ const HeatmapGlobe = ({ data }) => {
     const viewerInstance = useRef(null);
 
     useEffect(() => {
-        // Initialize the Cesium viewer
+        // cesium viewer
         viewerInstance.current = new Viewer(viewerRef.current);
 
-        // Load the country borders GeoJSON
-        const geoJsonUrl = "/data/countries.geo.json";
+        // Load the country borders json
+        const geoJsonUrl = "../data/countries.geo.json";
         GeoJsonDataSource.load(geoJsonUrl, {
             stroke: Color.BLUE, // Border color
-            fill: Color.YELLOW.withAlpha(0.15), // Country fill (translucent)
-            strokeWidth: 1.5,
+            fill: Color.PINK.withAlpha(0.5),
+            strokeWidth: 5,
+            markerSymbol: '?'
         })
             .then((dataSource) => {
                 viewerInstance.current.dataSources.add(dataSource);
