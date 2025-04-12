@@ -22,7 +22,7 @@ const HeatmapGlobe = ({ data }) => {
         viewerInstance.current = new Viewer(viewerRef.current);
 
         // Load the country borders json
-        const geoJsonUrl = "../data/countries.geo2.json";
+        const geoJsonUrl = "../data/merged_dementia.geo.json";
         GeoJsonDataSource.load(geoJsonUrl, {
             stroke: Color.BLUE, // Border color
             fill: Color.PINK.withAlpha(0.5),
@@ -71,7 +71,6 @@ const HeatmapGlobe = ({ data }) => {
 
         viewer.zoomTo(viewer.entities);
     }, [data]);
-
     return <div ref={viewerRef} style={{ width: "100%", height: "100vh" }} />;
 };
 
