@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+
 import {
     Viewer,
     Color,
@@ -7,10 +9,35 @@ import {
     ScreenSpaceEventType,
     defined,
     Cartesian3, Math as CesiumMath,
+    Ion,
+    ArcGisMapServerImageryProvider,
+
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 
 window.CESIUM_BASE_URL = "/cesium";
+Ion.defaultAccessToken = process.env.REACT_APP_CESIUM_ION_TOKEN;
+
+const useTypewriter = (text, speed = 25) => {
+    const [displayedText, setDisplayedText] = useState("");
+
+    useEffect(() => {
+        if (!text) return setDisplayedText("");
+        let index = 0;
+        setDisplayedText("");
+
+        const interval = setInterval(() => {
+            setDisplayedText((prev) => prev + text.charAt(index));
+            index++;
+            if (index >= text.length) clearInterval(interval);
+        }, speed);
+
+        return () => clearInterval(interval);
+    }, [text, speed]);
+
+    return displayedText;
+};
+
 
 const HeatmapGlobe = () => {
     const viewerRef = useRef(null);
@@ -19,13 +46,21 @@ const HeatmapGlobe = () => {
     const [selectedEntity, setSelectedEntity] = useState(null);
     const [explanation, setExplanation] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isGenerating, setIsGenerating] = useState(false); // 🆕 add this
+    const typedExplanation = useTypewriter(explanation, 10);
+
+
 
     useEffect(() => {
         viewerInstance.current = new Viewer(viewerRef.current, {
+            projectionPicker: false,
+            sceneModePicker: false,
+            baseLayerPicker: false,
             infoBox: false,
             selectionIndicator: false,
             timeline: false,
             animation: false,
+
         });
 
         const viewer = viewerInstance.current;
@@ -48,11 +83,12 @@ const HeatmapGlobe = () => {
                     if (!entity.polygon || val == null || isNaN(val)) return;
 
                     const normalized = Math.min(val / 5000, 1);
-                    const color = Color.fromHsl((1 - normalized) * 0.6, 1.0, 0.5).withAlpha(0.4);
+                    const color = Color.fromHsl((1 - normalized) * 0.6, 1.0, 0.5).withAlpha(0.3);
 
                     entity.polygon.material = color;
                     entity.polygon.outline = true;
-                    entity.polygon.outlineColor = Color.BLACK.withAlpha(0.3);
+                    entity.polygon.outlineColor = Color.BLACK.withAlpha(0.8);
+                    entity.polygon.outlineWidth = 2;
                 });
 
                 viewer.zoomTo(dataSource).then(() => {
@@ -96,6 +132,8 @@ const HeatmapGlobe = () => {
 
         if (!val || !population || !income) return;
 
+        setIsGenerating(true); // 🟡 start loading
+
         fetch("http://localhost:3001/explain", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -107,7 +145,10 @@ const HeatmapGlobe = () => {
             })
             .catch((err) => {
                 console.error("Failed to fetch explanation:", err);
-                setExplanation("AI failed to generate insight.");
+                setExplanation("⚠️ AI failed to generate insight.");
+            })
+            .finally(() => {
+                setIsGenerating(false); // ✅ done loading
             });
     }, [selectedEntity]);
 
@@ -223,17 +264,25 @@ const HeatmapGlobe = () => {
                             <p style={{ margin: "8px 0", fontSize: "14px" }}>
                                 <strong>Dementia Rate:</strong> {val?.toFixed(1)} per 100k
                             </p>
-                            {explanation && (
-                                <p style={{ fontStyle: "italic", fontSize: "13px", marginTop: "16px" }}>
-                                    <strong>AI Insight:</strong> {explanation}
-                                </p>
-                            )}
+
+                            <div style={{ fontSize: "13px", marginTop: "16px", fontStyle: "italic" }}>
+                                <strong>AI Insight:</strong>{" "}
+                                {isGenerating ? (
+                                    <span style={{ color: "#888", fontStyle: "normal" }}>Generating insight<span className="dot-flash">...</span></span>
+                                ) : explanation ? (
+                                    <ReactMarkdown>{typedExplanation}</ReactMarkdown>
+                                ) : (
+                                    <span style={{ color: "#aaa" }}>No insight available.</span>
+                                )}
+
+                            </div>
                         </div>
                     );
                 })()}
             </div>
         </div>
     );
+
 };
 
 export default HeatmapGlobe;

@@ -38,7 +38,9 @@ Using the global average as a frame of reference, determine if this rate is rela
 
 Then briefly explain 2–3 specific public health, social, or environmental factors that might contribute to this rate. Keep the response clear, concise (2–3 sentences), and easy for a general audience to understand.
 Avoid repeating the numeric values.
-    `;
+
+After, include 2-3 links that inform the user with information regarding the specific public health, social, or environmental factors that might contribute to this rate.    
+`;
 
     try {
         const result = await model.generateContent(prompt);
