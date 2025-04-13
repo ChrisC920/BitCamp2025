@@ -10,7 +10,6 @@ import {
     defined,
     Cartesian3, Math as CesiumMath,
     Ion,
-    ArcGisMapServerImageryProvider,
 } from "cesium";
 import * as Cesium from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
@@ -138,7 +137,6 @@ const HeatmapGlobe = () => {
             .catch((error) => {
                 console.error("Error loading GeoJSON:", error);
             });
-        const test = null;
         return () => {
             if (viewerInstance.current) {
                 viewerInstance.current.destroy();
