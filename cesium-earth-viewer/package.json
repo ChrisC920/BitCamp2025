@@ -9,6 +9,7 @@
     "@testing-library/user-event": "^13.5.0",
     "cesium": "^1.128.0",
     "papaparse": "^5.5.2",
+    "rc-slider": "^11.1.8",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",
