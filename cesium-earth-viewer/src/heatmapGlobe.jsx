@@ -11,8 +11,8 @@ import {
     Cartesian3, Math as CesiumMath,
     Ion,
     ArcGisMapServerImageryProvider,
-
 } from "cesium";
+import * as Cesium from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 
 window.CESIUM_BASE_URL = "/cesium";
@@ -42,10 +42,14 @@ const useTypewriter = (text, speed = 25) => {
 const HeatmapGlobe = () => {
     const viewerRef = useRef(null);
     const viewerInstance = useRef(null);
+    const lastClickedIdRef = useRef(null); // 🆕 stores last clicked entity ID
+
 
     const [selectedEntity, setSelectedEntity] = useState(null);
     const [explanation, setExplanation] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [loadingProgress, setLoadingProgress] = useState(0); // From 0 to 100
+
     const [isGenerating, setIsGenerating] = useState(false); // 🆕 add this
     const typedExplanation = useTypewriter(explanation, 10);
 
@@ -92,22 +96,44 @@ const HeatmapGlobe = () => {
                 });
 
                 viewer.zoomTo(dataSource).then(() => {
-                    // ✅ Done rendering → hide loading screen
                     setLoading(false);
+                    viewer.camera.flyTo({
+                        destination: Cartesian3.fromDegrees(-95.0, 40.0, 20000000), // View over America
+                        orientation: {
+                            heading: CesiumMath.toRadians(360),     // Full spin
+                            pitch: CesiumMath.toRadians(-90),       // Top-down view
+                            roll: 0,
+                        },
+                        duration: 3, // seconds
+                        easingFunction: Cesium.EasingFunction.SINUSOIDAL_IN_OUT,
+                    });
+
                 });
 
                 // 👆 Handle clicks
                 const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
                 handler.setInputAction((movement) => {
                     const picked = viewer.scene.pick(movement.position);
+
                     if (defined(picked) && picked.id && picked.id.properties?.val) {
-                        setSelectedEntity(picked.id);
-                        setExplanation(null);
+                        const newId = picked.id.id;
+
+                        // 🛑 Ignore if the clicked country is already selected
+                        if (lastClickedIdRef.current === newId) return;
+
+                        lastClickedIdRef.current = newId;           // Update last clicked
+                        setExplanation(null);                       // Clear old insight
+                        setSelectedEntity(picked.id);               // Select new entity
+
                     } else {
+                        // 🌐 Clicked on empty space
+                        lastClickedIdRef.current = null;
                         setSelectedEntity(null);
                         setExplanation(null);
                     }
                 }, ScreenSpaceEventType.LEFT_CLICK);
+
+
             })
             .catch((error) => {
                 console.error("Error loading GeoJSON:", error);
@@ -151,6 +177,18 @@ const HeatmapGlobe = () => {
                 setIsGenerating(false); // ✅ done loading
             });
     }, [selectedEntity]);
+    useEffect(() => {
+        if (!loading) return;
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 2;
+            setLoadingProgress(Math.min(progress, 100));
+            if (progress >= 100) clearInterval(interval);
+        }, 60); // ~3 seconds
+
+        return () => clearInterval(interval);
+    }, [loading]);
+
 
     return (
         <div style={{ position: "relative", width: "100%", height: "100vh" }}>
@@ -167,19 +205,64 @@ const HeatmapGlobe = () => {
                         left: 0,
                         width: "100%",
                         height: "100%",
-                        background: "#000000cc",
+                        background: "#000000ee",
                         display: "flex",
                         justifyContent: "center",
                         alignItems: "center",
+                        flexDirection: "column",
                         color: "#fff",
-                        fontSize: "1.6rem",
-                        fontWeight: "bold",
-                        fontFamily: "sans-serif",
+                        fontSize: "1.4rem",
+                        fontFamily: "Segoe UI, sans-serif",
                     }}
                 >
-                    Loading globe...
+                    <div
+                        style={{
+                            position: "relative",
+                            width: "120px",
+                            height: "120px",
+                            marginBottom: "20px",
+                        }}
+                    >
+                        {/* Globe image */}
+                        <img
+                            src="/images/earth.png"
+                            alt="Earth"
+                            style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "contain",
+                                opacity: 0.15,
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                zIndex: 1,
+                            }}
+                        />
+
+                        {/* Filled progress overlay */}
+                        <div
+                            style={{
+                                backgroundImage: "url(/images/earth.png)",
+                                backgroundSize: "cover",
+                                position: "absolute",
+                                top: 0,
+                                left: 0,
+                                width: `${loadingProgress}%`,
+                                height: "100%",
+                                opacity: 1,
+                                zIndex: 2,
+                                transition: "width 0.2s ease-out",
+                            }}
+                        />
+                    </div>
+
+                    <div style={{ fontWeight: 500 }}>
+                        Loading Earth Visualization... {loadingProgress}%
+                    </div>
                 </div>
             )}
+
+
 
             {/* ℹ️ Info Side Panel */}
             <div
@@ -188,7 +271,7 @@ const HeatmapGlobe = () => {
                     top: 0,
                     right: 0,
                     height: "100%",
-                    width: "340px",
+                    width: "30%",
                     background: "#ffffff",
                     boxShadow: "0 0 20px rgba(0,0,0,0.3)",
                     transform: selectedEntity ? "translateX(0)" : "translateX(100%)",
