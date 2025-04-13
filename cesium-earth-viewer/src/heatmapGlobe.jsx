@@ -66,6 +66,24 @@ const HeatmapGlobe = () => {
     }, []);
 
     useEffect(() => {
+        const duration = 4000;
+        const steps = duration / 60;
+        let step = 0;
+
+        const interval = setInterval(() => {
+            step++;
+            const progress = Math.trunc(Math.min((step / steps) * 100, 100));
+            setLoadingProgress(progress);
+            if (step >= steps) {
+                clearInterval(interval);
+                setLoading(false);
+            }
+        }, 60);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
         const loadData = async () => {
             const loaded = await Promise.all(
                 DATA_SETS.map(async ({ year, path }) => {
@@ -78,7 +96,6 @@ const HeatmapGlobe = () => {
                 acc[year] = source;
                 return acc;
             }, {}));
-            setLoading(false);
         };
 
         loadData();
@@ -144,18 +161,6 @@ const HeatmapGlobe = () => {
 
         return () => handler.destroy();
     }, [activeYear, datasets]);
-
-    useEffect(() => {
-        if (!loading) return;
-        let progress = 0;
-        const interval = setInterval(() => {
-            progress += 2;
-            setLoadingProgress(Math.min(progress, 100));
-            if (progress >= 100) clearInterval(interval);
-        }, 60);
-
-        return () => clearInterval(interval);
-    }, [loading]);
 
     useEffect(() => {
         if (!selectedEntity) return;
@@ -224,39 +229,18 @@ const HeatmapGlobe = () => {
                     fontSize: "1.4rem",
                     fontFamily: "Segoe UI, sans-serif",
                 }}>
-                    <div style={{
-                        position: "relative",
-                        width: "120px",
-                        height: "120px",
-                        marginBottom: "20px",
-                    }}>
-                        <img
-                            src="/images/earth.png"
-                            alt="Earth"
-                            style={{
-                                width: "100%",
-                                height: "100%",
-                                objectFit: "contain",
-                                opacity: 0.15,
-                                position: "absolute",
-                                top: 0,
-                                left: 0,
-                                zIndex: 1,
-                            }}
-                        />
-                        <div style={{
-                            backgroundImage: "url(/images/earth.png)",
-                            backgroundSize: "cover",
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
-                            width: `${loadingProgress}%`,
-                            height: "100%",
-                            opacity: 1,
-                            zIndex: 2,
-                            transition: "width 0.2s ease-out",
-                        }} />
-                    </div>
+
+                    <img
+                        src="/images/dino_loading.gif"
+                        alt="Loading animation"
+                        style={{
+                            width: "360px",
+                            height: "360px",
+                            objectFit: "contain",
+                            marginBottom: "40px"
+                        }}
+                    />
+
                     <div style={{ fontWeight: 500 }}>
                         Loading Earth Visualization... {loadingProgress}%
                     </div>
