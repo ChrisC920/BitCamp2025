@@ -1,7 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LandingPage from "./LandingPage";
-import HeatmapGlobe from "./heatmapGlobe"; // rename your component file
+import HeatmapGlobe from "./heatmapGlobe";
 
 function App() {
   return (
@@ -15,4 +15,3 @@ function App() {
 }
 
 export default App;
-
