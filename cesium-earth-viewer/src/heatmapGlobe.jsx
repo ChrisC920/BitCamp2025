@@ -20,6 +20,12 @@ window.CESIUM_BASE_URL = "/cesium";
 Ion.defaultAccessToken = process.env.REACT_APP_CESIUM_ION_TOKEN;
 
 const DATA_SETS = [
+    { year: 2013, path: "/data/merged_dementia2013.geo.json" },
+    { year: 2014, path: "/data/merged_dementia2014.geo.json" },
+    { year: 2015, path: "/data/merged_dementia2015.geo.json" },
+    { year: 2016, path: "/data/merged_dementia2016.geo.json" },
+    { year: 2017, path: "/data/merged_dementia2017.geo.json" },
+    { year: 2018, path: "/data/merged_dementia2018.geo.json" },
     { year: 2019, path: "/data/merged_dementia2019.geo.json" },
     { year: 2020, path: "/data/merged_dementia2020.geo.json" },
     { year: 2021, path: "/data/merged_dementia2021.geo.json" }
@@ -194,15 +200,25 @@ const HeatmapGlobe = () => {
                     background: "rgba(0,0,0,0.7)",
                     padding: "12px 24px",
                     borderRadius: "8px",
-                    width: "300px"
+                    width: "500px"
                 }}>
                     <Slider
-                        min={2019}
+                        min={2013}
                         max={2021}
                         step={1}
                         value={activeYear}
                         onChange={setActiveYear}
-                        marks={{ 2019: "2019", 2020: "2020", 2021: "2021" }}
+                        marks={{
+                            2013: "2013",
+                            2014: "2014",
+                            2015: "2015",
+                            2016: "2016",
+                            2017: "2017",
+                            2018: "2018",
+                            2019: "2019", 
+                            2020: "2020", 
+                            2021: "2021" 
+                        }}
                     />
                 </div>
             )}
