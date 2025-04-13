@@ -38,7 +38,7 @@ const StarfieldBackground = () => {
                 const y = star.y * k + height / 2;
 
                 if (x >= 0 && x <= width && y >= 0 && y <= height) {
-                    const size = (1 - star.z / width);
+                    const size = Math.max((1 - star.z / width), 0);
                     ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
                     ctx.beginPath();
                     ctx.arc(x, y, size, 0, Math.PI * 2);
