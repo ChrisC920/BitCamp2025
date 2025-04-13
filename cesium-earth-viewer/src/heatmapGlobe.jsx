@@ -77,7 +77,7 @@ const HeatmapGlobe = () => {
             },
         });
 
-        GeoJsonDataSource.load("/data/merged_dementia.geo.json")
+        GeoJsonDataSource.load("/data/merged_dementia2021.geo.json")
             .then((dataSource) => {
                 viewer.dataSources.add(dataSource);
 
