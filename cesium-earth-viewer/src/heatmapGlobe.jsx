@@ -6,20 +6,25 @@ import {
     ScreenSpaceEventHandler,
     ScreenSpaceEventType,
     defined,
-    Cartesian3, Math as CesiumMath,
+    Cartesian3, 
+    Math as CesiumMath,
 } from "cesium";
 import "cesium/Build/Cesium/Widgets/widgets.css";
 
 window.CESIUM_BASE_URL = "/cesium";
 
-const HeatmapGlobe = () => {
+const HeatmapGlobe = ({ year }) => {
     const viewerRef = useRef(null);
     const viewerInstance = useRef(null);
+    const clickHandler = useRef(null);
+    const dataSourceRef = useRef(null);
+    const abortControllerRef = useRef(new AbortController());
 
     const [selectedEntity, setSelectedEntity] = useState(null);
     const [explanation, setExplanation] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // Initialize viewer 
     useEffect(() => {
         viewerInstance.current = new Viewer(viewerRef.current, {
             infoBox: false,
@@ -29,7 +34,6 @@ const HeatmapGlobe = () => {
         });
 
         const viewer = viewerInstance.current;
-
         viewer.camera.setView({
             destination: Cartesian3.fromDegrees(-95.0, 40.0, 20000000),
             orientation: {
@@ -39,44 +43,6 @@ const HeatmapGlobe = () => {
             },
         });
 
-        GeoJsonDataSource.load("/data/merged_dementia.geo.json")
-            .then((dataSource) => {
-                viewer.dataSources.add(dataSource);
-
-                dataSource.entities.values.forEach((entity) => {
-                    const val = entity.properties?.val?._value;
-                    if (!entity.polygon || val == null || isNaN(val)) return;
-
-                    const normalized = Math.min(val / 5000, 1);
-                    const color = Color.fromHsl((1 - normalized) * 0.6, 1.0, 0.5).withAlpha(0.4);
-
-                    entity.polygon.material = color;
-                    entity.polygon.outline = true;
-                    entity.polygon.outlineColor = Color.BLACK.withAlpha(0.3);
-                });
-
-                viewer.zoomTo(dataSource).then(() => {
-                    // ✅ Done rendering → hide loading screen
-                    setLoading(false);
-                });
-
-                // 👆 Handle clicks
-                const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
-                handler.setInputAction((movement) => {
-                    const picked = viewer.scene.pick(movement.position);
-                    if (defined(picked) && picked.id && picked.id.properties?.val) {
-                        setSelectedEntity(picked.id);
-                        setExplanation(null);
-                    } else {
-                        setSelectedEntity(null);
-                        setExplanation(null);
-                    }
-                }, ScreenSpaceEventType.LEFT_CLICK);
-            })
-            .catch((error) => {
-                console.error("Error loading GeoJSON:", error);
-            });
-        const test = null;
         return () => {
             if (viewerInstance.current) {
                 viewerInstance.current.destroy();
@@ -85,6 +51,89 @@ const HeatmapGlobe = () => {
         };
     }, []);
 
+    // data loading
+    useEffect(() => {
+        const viewer = viewerInstance.current;
+        if (!viewer) return;
+
+        const loadData = async () => {
+            setLoading(true);
+            setSelectedEntity(null);
+            setExplanation(null);
+            
+            try {
+                abortControllerRef.current.abort();
+                abortControllerRef.current = new AbortController();
+
+                // Clear previous data
+                if (dataSourceRef.current) {
+                    viewer.dataSources.remove(dataSourceRef.current);
+                    dataSourceRef.current = null;
+                }
+                if (clickHandler.current) {
+                    clickHandler.current.destroy();
+                    clickHandler.current = null;
+                }
+
+                // Load new data
+                const dataSource = await GeoJsonDataSource.load(
+                    `/data/merged_dementia${year}.geo.json`,
+                    { abortSignal: abortControllerRef.current.signal }
+                );
+                
+                dataSourceRef.current = dataSource;
+                viewer.dataSources.add(dataSource);
+
+                // Style entities
+                dataSource.entities.values.forEach((entity) => {
+                    const val = entity.properties?.val?._value;
+                    if (!entity.polygon || val == null || isNaN(val)) return;
+
+                    const normalized = Math.min(val / 5000, 1);
+                    const color = Color.fromHsl(
+                        (1 - normalized) * 0.6, 
+                        1.0, 
+                        0.5
+                    ).withAlpha(0.4);
+
+                    entity.polygon.material = color;
+                    entity.polygon.outline = true;
+                    entity.polygon.outlineColor = Color.BLACK.withAlpha(0.3);
+                });
+
+                // click handler
+                clickHandler.current = new ScreenSpaceEventHandler(viewer.scene.canvas);
+                clickHandler.current.setInputAction((movement) => {
+                    const picked = viewer.scene.pick(movement.position);
+                    if (defined(picked) && picked.id?.properties?.val) {
+                        setSelectedEntity(picked.id);
+                    } else {
+                        setSelectedEntity(null);
+                    }
+                    setExplanation(null);
+                }, ScreenSpaceEventType.LEFT_CLICK);
+
+                await viewer.zoomTo(dataSource);
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    console.error("Error loading GeoJSON:", error);
+                }
+            }
+            setLoading(false);
+        };
+
+        loadData();
+
+        return () => {
+            abortControllerRef.current.abort();
+            if (clickHandler.current) {
+                clickHandler.current.destroy();
+                clickHandler.current = null;
+            }
+        };
+    }, [year]);
+
+    // ai explanation
     useEffect(() => {
         if (!selectedEntity) return;
 
@@ -102,84 +151,66 @@ const HeatmapGlobe = () => {
             body: JSON.stringify({ country, val, population, income }),
         })
             .then((res) => res.json())
-            .then((data) => {
-                setExplanation(data.explanation);
-            })
-            .catch((err) => {
-                console.error("Failed to fetch explanation:", err);
-                setExplanation("AI failed to generate insight.");
-            });
+            .then((data) => setExplanation(data.explanation))
+            .catch(() => setExplanation("AI failed to generate insight."));
     }, [selectedEntity]);
 
     return (
         <div style={{ position: "relative", width: "100%", height: "100vh" }}>
-            {/* 🌍 Cesium Viewer */}
             <div ref={viewerRef} style={{ width: "100%", height: "100%" }} />
 
-            {/* ⏳ Loading Overlay */}
             {loading && (
-                <div
-                    style={{
-                        position: "absolute",
-                        zIndex: 2000,
-                        top: 0,
-                        left: 0,
-                        width: "100%",
-                        height: "100%",
-                        background: "#000000cc",
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        color: "#fff",
-                        fontSize: "1.6rem",
-                        fontWeight: "bold",
-                        fontFamily: "sans-serif",
-                    }}
-                >
+                <div style={{
+                    position: "absolute",
+                    zIndex: 2000,
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    background: "#000000cc",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    color: "#fff",
+                    fontSize: "1.6rem",
+                    fontWeight: "bold",
+                }}>
                     Loading globe...
                 </div>
             )}
 
-            {/* ℹ️ Info Side Panel */}
-            <div
-                style={{
-                    position: "absolute",
-                    top: 0,
-                    right: 0,
-                    height: "100%",
-                    width: "340px",
-                    background: "#ffffff",
-                    boxShadow: "0 0 20px rgba(0,0,0,0.3)",
-                    transform: selectedEntity ? "translateX(0)" : "translateX(100%)",
-                    transition: "transform 0.3s ease-in-out",
-                    zIndex: 1000,
-                    borderTopLeftRadius: "12px",
-                    borderBottomLeftRadius: "12px",
-                    overflowY: "auto",
-                }}
-            >
+            <div style={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                height: "100%",
+                width: "340px",
+                background: "#ffffff",
+                boxShadow: "0 0 20px rgba(0,0,0,0.3)",
+                transform: selectedEntity ? "translateX(0)" : "translateX(100%)",
+                transition: "transform 0.3s ease-in-out",
+                zIndex: 1000,
+                overflowY: "auto",
+            }}>
                 {selectedEntity && (() => {
                     const props = selectedEntity.properties;
                     const val = props?.val?._value;
                     const name = props.country?._value || props.name_en?._value || "Unknown";
-
                     const normalized = Math.min(val / 5000, 1);
-                    const r = Math.round(255 - 116 * normalized);
-                    const g = Math.round(255 * (1 - normalized));
-                    const topBorderColor = `rgb(${r},${g},0)`;
-                    const flagUrl = `https://flagsapi.com/${props.iso_a2?._value || ""}/flat/64.png`;
+                    const topBorderColor = `rgb(
+                        ${Math.round(255 - 116 * normalized)},
+                        ${Math.round(255 * (1 - normalized))},
+                        0
+                    )`;
 
                     return (
-                        <div style={{ padding: "24px", paddingTop: "18px" }}>
-                            <div
-                                style={{
-                                    height: "6px",
-                                    background: topBorderColor,
-                                    borderTopLeftRadius: "12px",
-                                    borderTopRightRadius: "12px",
-                                    margin: "-24px -24px 16px -24px",
-                                }}
-                            />
+                        <div style={{ padding: "24px" }}>
+                            <div style={{
+                                height: "6px",
+                                background: topBorderColor,
+                                margin: "-24px -24px 16px -24px",
+                            }} />
+
                             <button
                                 onClick={() => setSelectedEntity(null)}
                                 style={{
@@ -195,9 +226,10 @@ const HeatmapGlobe = () => {
                             >
                                 &times;
                             </button>
+
                             {props.iso_a2?._value && (
                                 <img
-                                    src={flagUrl}
+                                    src={`https://flagsapi.com/${props.iso_a2._value}/flat/64.png`}
                                     alt={`${name} flag`}
                                     style={{
                                         width: "48px",
@@ -208,23 +240,14 @@ const HeatmapGlobe = () => {
                                     }}
                                 />
                             )}
-                            <h2 style={{ marginTop: "0", marginBottom: "12px", fontSize: "20px", color: "#333" }}>
-                                {name}
-                            </h2>
-                            <p style={{ margin: "8px 0", fontSize: "14px" }}>
-                                <strong>Population:</strong> {props.pop_est?._value?.toLocaleString()}
-                            </p>
-                            <p style={{ margin: "8px 0", fontSize: "14px" }}>
-                                <strong>Income Group:</strong> {props.income_grp?._value}
-                            </p>
-                            <p style={{ margin: "8px 0", fontSize: "14px" }}>
-                                <strong>Subregion:</strong> {props.subregion?._value}
-                            </p>
-                            <p style={{ margin: "8px 0", fontSize: "14px" }}>
-                                <strong>Dementia Rate:</strong> {val?.toFixed(1)} per 100k
-                            </p>
+
+                            <h2 style={{ margin: "0 0 12px 0", fontSize: "20px" }}>{name}</h2>
+                            <p><strong>Population:</strong> {props.pop_est?._value?.toLocaleString()}</p>
+                            <p><strong>Income Group:</strong> {props.income_grp?._value}</p>
+                            <p><strong>Dementia Rate:</strong> {val?.toFixed(1)} per 100k</p>
+                            
                             {explanation && (
-                                <p style={{ fontStyle: "italic", fontSize: "13px", marginTop: "16px" }}>
+                                <p style={{ marginTop: "16px", fontStyle: "italic" }}>
                                     <strong>AI Insight:</strong> {explanation}
                                 </p>
                             )}
