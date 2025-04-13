@@ -1,0 +1,49 @@
+.landing-container {
+    position: relative;
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    background: radial-gradient(ellipse at bottom, #1a0028, #000000 80%);
+    font-family: 'Segoe UI', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+}
+
+/* Content styling */
+.content {
+    position: relative;
+    z-index: 2;
+    max-width: 700px;
+    padding: 2rem;
+}
+
+.content h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    letter-spacing: 0.05em;
+}
+
+.content p {
+    font-size: 1.2rem;
+    color: #ccc;
+    margin-bottom: 2rem;
+}
+
+.content button {
+    background-color: #ffffff10;
+    border: 1px solid #888;
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+}
+
+.content button:hover {
+    background: #ffffff22;
+    transform: scale(1.05);
+}

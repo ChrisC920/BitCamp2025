@@ -1,9 +1,18 @@
-// App.js
-import React, { useEffect, useState } from "react";
-import HeatmapGlobe from "./heatmapGlobe";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import LandingPage from "./LandingPage";
+import HeatmapGlobe from "./heatmapGlobe"; // rename your component file
 
 function App() {
-  return <HeatmapGlobe />;
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/globe" element={<HeatmapGlobe />} />
+      </Routes>
+    </Router>
+  );
 }
 
 export default App;
+
