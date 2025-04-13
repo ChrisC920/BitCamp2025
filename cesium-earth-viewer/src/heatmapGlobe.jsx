@@ -45,7 +45,6 @@ const useTypewriter = (text, speed = 25) => {
     return displayedText;
 };
 
-
 const HeatmapGlobe = () => {
     const viewerRef = useRef(null);
     const viewerInstance = useRef(null);
@@ -62,10 +61,10 @@ const HeatmapGlobe = () => {
     useEffect(() => {
         document.body.style.overflow = "hidden";
         return () => {
-            document.body.style.overflow = "auto"; // reset on cleanup
+            document.body.style.overflow = "auto";
         };
     }, []);
-    // Preload all datasets
+
     useEffect(() => {
         const loadData = async () => {
             const loaded = await Promise.all(
@@ -85,7 +84,6 @@ const HeatmapGlobe = () => {
         loadData();
     }, []);
 
-    // Initialize viewer and handle year changes
     useEffect(() => {
         if (!viewerInstance.current) {
             viewerInstance.current = new Viewer(viewerRef.current, {
@@ -111,12 +109,10 @@ const HeatmapGlobe = () => {
         const viewer = viewerInstance.current;
         if (!datasets[activeYear]) return;
 
-        // Clear existing data sources
         viewer.dataSources.removeAll();
         const dataSource = datasets[activeYear];
         viewer.dataSources.add(dataSource);
 
-        // Apply styling
         dataSource.entities.values.forEach((entity) => {
             const val = entity.properties?.val?._value;
             if (!entity.polygon || val == null || isNaN(val)) return;
@@ -130,7 +126,6 @@ const HeatmapGlobe = () => {
             entity.polygon.outlineWidth = 2;
         });
 
-        // Set up click handler
         const handler = new ScreenSpaceEventHandler(viewer.scene.canvas);
         handler.setInputAction((movement) => {
             const picked = viewer.scene.pick(movement.position);
@@ -189,7 +184,6 @@ const HeatmapGlobe = () => {
         <div style={{ position: "relative", width: "100%", height: "100vh" }}>
             <div ref={viewerRef} style={{ width: "100%", height: "100%" }} />
 
-            {/* Year Slider */}
             {!loading && (
                 <div style={{
                     position: "absolute",
@@ -213,7 +207,6 @@ const HeatmapGlobe = () => {
                 </div>
             )}
 
-            {/* Loading Overlay */}
             {loading && (
                 <div style={{
                     position: "absolute",
@@ -270,104 +263,90 @@ const HeatmapGlobe = () => {
                 </div>
             )}
 
-            {/* Info Side Panel */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                right: 0,
-                height: "100%",
-                width: "30%",
-                background: "#ffffff",
-                boxShadow: "0 0 20px rgba(0,0,0,0.3)",
-                transform: selectedEntity ? "translateX(0)" : "translateX(100%)",
-                transition: "transform 0.3s ease-in-out",
-                zIndex: 1000,
-                borderTopLeftRadius: "12px",
-                borderBottomLeftRadius: "12px",
-                overflowY: "auto",           // Vertical scroll
-                overflowX: "hidden",         // Prevent horizontal scroll
-                whiteSpace: "normal",        // Wrap content if needed
-                maxWidth: "100%",            // Prevent spilling
-                boxSizing: "border-box",     // Respect padding inside width
-            }}>
+            {selectedEntity && (() => {
+                const props = selectedEntity.properties;
+                const val = props?.val?._value;
+                const name = props.country?._value || props.name_en?._value || "Unknown";
 
-                {selectedEntity && (() => {
-                    const props = selectedEntity.properties;
-                    const val = props?.val?._value;
-                    const name = props.country?._value || props.name_en?._value || "Unknown";
-                    const normalized = Math.min(val / 5000, 1);
-                    const r = Math.round(255 - 116 * normalized);
-                    const g = Math.round(255 * (1 - normalized));
-                    const topBorderColor = `rgb(${r},${g},0)`;
-                    const flagUrl = `https://flagsapi.com/${props.iso_a2?._value || ""}/flat/64.png`;
+                const flagUrl = `https://flagsapi.com/${props.iso_a2?._value || ""}/flat/64.png`;
 
-                    return (
-                        <div style={{ padding: "24px", paddingTop: "18px" }}>
+                return (
+                    <div style={{
+                        position: "absolute",
+                        top: 0,
+                        right: 0,
+                        height: "100%",
+                        width: "30%",
+                        background: "#1e1e1e",
+                        color: "#f0f0f0",
+                        boxShadow: "0 0 20px rgba(0,0,0,0.5)",
+                        transform: "translateX(0)",
+                        transition: "transform 0.3s ease-in-out",
+                        zIndex: 1000,
+                        borderTopLeftRadius: "12px",
+                        borderBottomLeftRadius: "12px",
+                        overflowY: "auto",
+                        overflowX: "hidden",
+                        boxSizing: "border-box",
+                        padding: "24px",
+                    }}>
+                        <button
+                            onClick={() => setSelectedEntity(null)}
+                            style={{
+                                position: "absolute",
+                                top: "10px",
+                                right: "16px",
+                                fontSize: "20px",
+                                background: "none",
+                                border: "none",
+                                cursor: "pointer",
+                                color: "#888",
+                            }}>
+                            &times;
+                        </button>
+                        {props.iso_a2?._value && (
                             <div style={{
-                                height: "6px",
-                                background: topBorderColor,
-                                borderTopLeftRadius: "12px",
-                                borderTopRightRadius: "12px",
-                                margin: "-24px -24px 16px -24px",
-                            }} />
-                            <button
-                                onClick={() => setSelectedEntity(null)}
-                                style={{
-                                    position: "absolute",
-                                    top: "10px",
-                                    right: "16px",
-                                    fontSize: "20px",
-                                    background: "none",
-                                    border: "none",
-                                    cursor: "pointer",
-                                    color: "#999",
-                                }}>
-                                &times;
-                            </button>
-                            {props.iso_a2?._value && (
+                                display: "flex",
+                                alignItems: "center",
+                                marginBottom: "16px",
+                                gap: "12px"
+                            }}>
                                 <img
                                     src={flagUrl}
                                     alt={`${name} flag`}
                                     style={{
-                                        width: "48px",
-                                        height: "32px",
+                                        width: "40px",
+                                        height: "28px",
                                         borderRadius: "4px",
-                                        boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
-                                        marginBottom: "12px",
+                                        boxShadow: "0 1px 6px rgba(0,0,0,0.3)"
                                     }}
                                 />
-                            )}
-                            <h2 style={{ marginTop: "0", marginBottom: "12px", fontSize: "20px", color: "#333" }}>
-                                {name}
-                            </h2>
-                            <p style={{ margin: "8px 0", fontSize: "14px" }}>
-                                <strong>Population:</strong> {props.pop_est?._value?.toLocaleString()}
-                            </p>
-                            <p style={{ margin: "8px 0", fontSize: "14px" }}>
-                                <strong>Income Group:</strong> {props.income_grp?._value}
-                            </p>
-                            <p style={{ margin: "8px 0", fontSize: "14px" }}>
-                                <strong>Subregion:</strong> {props.subregion?._value}
-                            </p>
-                            <p style={{ margin: "8px 0", fontSize: "14px" }}>
-                                <strong>Dementia Rate:</strong> {val != null ? (<div>{val?.toFixed(1)} occurrences per 100k</div>) : (<div>No data available.</div>)}
-                            </p>
-                            <div style={{ fontSize: "13px", marginTop: "16px", fontStyle: "italic" }}>
-                                <strong>AI Insight:</strong>{" "}
-                                {isGenerating ? (
-                                    <span style={{ color: "#888", fontStyle: "normal" }}>
-                                        Generating insight<span className="dot-flash">...</span>
-                                    </span>
-                                ) : explanation ? (
-                                    <ReactMarkdown>{typedExplanation}</ReactMarkdown>
-                                ) : (
-                                    <span style={{ color: "#aaa" }}>No insight available.</span>
-                                )}
+                                <h2 style={{ margin: 0, fontSize: "20px" }}>{name}</h2>
                             </div>
+                        )}
+                        <div style={{
+                            fontSize: "12px"
+                        }}>
+                            <p><strong>Population:</strong> {props.pop_est?._value?.toLocaleString()}</p>
+                            <p><strong>Income Group:</strong> {props.income_grp?._value}</p>
+                            <p><strong>Subregion:</strong> {props.subregion?._value}</p>
+                            <p><strong>Dementia Rate:</strong> {val != null ? (<div>{val?.toFixed(1)} occurrences per 100k</div>) : (<div>No data found.</div>)}</p>
                         </div>
-                    );
-                })()}
-            </div>
+                        <div style={{ fontSize: "13px", marginTop: "16px", fontStyle: "italic" }}>
+                            <strong>AI Insight:</strong>{" "}
+                            {isGenerating ? (
+                                <span style={{ color: "#aaa", fontStyle: "normal" }}>
+                                    Generating insight<span className="dot-flash">...</span>
+                                </span>
+                            ) : explanation ? (
+                                <ReactMarkdown>{typedExplanation}</ReactMarkdown>
+                            ) : (
+                                <span style={{ color: "#777" }}>No insight available.</span>
+                            )}
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 };
