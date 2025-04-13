@@ -12,7 +12,7 @@ def get_iso3(country_name):
 
 # Step 1: Load dementia data and map it by ISO3
 dementia_data = {}
-with open("2021dementia.csv", newline='', encoding='utf-8') as csvfile:
+with open("2013dementia.csv", newline='', encoding='utf-8') as csvfile:
     reader = csv.DictReader(csvfile)
     for row in reader:
         if (
@@ -20,7 +20,7 @@ with open("2021dementia.csv", newline='', encoding='utf-8') as csvfile:
             and row["metric"] == "Rate"
             and row["age"] == "55+ years"
             and row["sex"] == "Both"
-            and row["year"] == "2021"
+            and row["year"] == "2013"
         ):
             iso3 = get_iso3(row["location"])
             if iso3:
@@ -52,5 +52,5 @@ for feature in geo_data["features"]:
         })
 
 # Step 4: Save the merged GeoJSON
-with open("merged_dementia.geo.json", "w", encoding="utf-8") as outfile:
+with open("merged_dementia2013.geo.json", "w", encoding="utf-8") as outfile:
     json.dump(geo_data, outfile, indent=2)
