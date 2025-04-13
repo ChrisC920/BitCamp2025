@@ -41,7 +41,7 @@ const useTypewriter = (text, speed = 25) => {
 const HeatmapGlobe = () => {
     const viewerRef = useRef(null);
     const viewerInstance = useRef(null);
-    const lastClickedIdRef = useRef(null); // 🆕 stores last clicked entity ID
+    const lastClickedIdRef = useRef(null); // last clicked entity ID
 
 
     const [selectedEntity, setSelectedEntity] = useState(null);
@@ -49,7 +49,7 @@ const HeatmapGlobe = () => {
     const [loading, setLoading] = useState(true);
     const [loadingProgress, setLoadingProgress] = useState(0); // From 0 to 100
 
-    const [isGenerating, setIsGenerating] = useState(false); // 🆕 add this
+    const [isGenerating, setIsGenerating] = useState(false);
     const typedExplanation = useTypewriter(explanation, 10);
 
 
@@ -99,8 +99,8 @@ const HeatmapGlobe = () => {
                     viewer.camera.flyTo({
                         destination: Cartesian3.fromDegrees(-95.0, 40.0, 20000000), // View over America
                         orientation: {
-                            heading: CesiumMath.toRadians(360),     // Full spin
-                            pitch: CesiumMath.toRadians(-90),       // Top-down view
+                            heading: CesiumMath.toRadians(360),
+                            pitch: CesiumMath.toRadians(-90),
                             roll: 0,
                         },
                         duration: 3, // seconds
@@ -117,15 +117,14 @@ const HeatmapGlobe = () => {
                     if (defined(picked) && picked.id && picked.id.properties?.val) {
                         const newId = picked.id.id;
 
-                        // 🛑 Ignore if the clicked country is already selected
                         if (lastClickedIdRef.current === newId) return;
 
                         lastClickedIdRef.current = newId;           // Update last clicked
-                        setExplanation(null);                       // Clear old insight
-                        setSelectedEntity(picked.id);               // Select new entity
+                        setExplanation(null);
+                        setSelectedEntity(picked.id); 
 
                     } else {
-                        // 🌐 Clicked on empty space
+
                         lastClickedIdRef.current = null;
                         setSelectedEntity(null);
                         setExplanation(null);
@@ -156,7 +155,7 @@ const HeatmapGlobe = () => {
 
         if (!val || !population || !income) return;
 
-        setIsGenerating(true); // 🟡 start loading
+        setIsGenerating(true); // load
 
         fetch("http://localhost:3001/explain", {
             method: "POST",
@@ -172,7 +171,7 @@ const HeatmapGlobe = () => {
                 setExplanation("⚠️ AI failed to generate insight.");
             })
             .finally(() => {
-                setIsGenerating(false); // ✅ done loading
+                setIsGenerating(false); // show page
             });
     }, [selectedEntity]);
     useEffect(() => {
@@ -190,10 +189,10 @@ const HeatmapGlobe = () => {
 
     return (
         <div style={{ position: "relative", width: "100%", height: "100vh" }}>
-            {/* 🌍 Cesium Viewer */}
+            {/* Cesium Viewer */}
             <div ref={viewerRef} style={{ width: "100%", height: "100%" }} />
 
-            {/* ⏳ Loading Overlay */}
+            {/* Loading Overlay */}
             {loading && (
                 <div
                     style={{
@@ -262,7 +261,7 @@ const HeatmapGlobe = () => {
 
 
 
-            {/* ℹ️ Info Side Panel */}
+            {/* Info Side Panel */}
             <div
                 style={{
                     position: "absolute",
