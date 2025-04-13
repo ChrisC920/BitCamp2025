@@ -23,11 +23,10 @@ const useTypewriter = (text, speed = 25) => {
     useEffect(() => {
         if (!text) return setDisplayedText("");
         let index = 0;
-        setDisplayedText("");
 
         const interval = setInterval(() => {
-            setDisplayedText((prev) => prev + text.charAt(index));
             index++;
+            setDisplayedText(text.substring(0, index));
             if (index >= text.length) clearInterval(interval);
         }, speed);
 
@@ -36,6 +35,7 @@ const useTypewriter = (text, speed = 25) => {
 
     return displayedText;
 };
+
 
 
 const HeatmapGlobe = () => {
@@ -52,6 +52,12 @@ const HeatmapGlobe = () => {
     const [isGenerating, setIsGenerating] = useState(false); // 🆕 add this
     const typedExplanation = useTypewriter(explanation, 10);
 
+    useEffect(() => {
+        document.body.style.overflow = "hidden";
+        return () => {
+            document.body.style.overflow = "auto"; // reset on cleanup
+        };
+    }, []);
 
 
     useEffect(() => {
@@ -277,9 +283,14 @@ const HeatmapGlobe = () => {
                     zIndex: 1000,
                     borderTopLeftRadius: "12px",
                     borderBottomLeftRadius: "12px",
-                    overflowY: "auto",
+                    overflowY: "auto",           // Vertical scroll
+                    overflowX: "hidden",         // Prevent horizontal scroll
+                    whiteSpace: "normal",        // Wrap content if needed
+                    maxWidth: "100%",            // Prevent spilling
+                    boxSizing: "border-box",     // Respect padding inside width
                 }}
             >
+
                 {selectedEntity && (() => {
                     const props = selectedEntity.properties;
                     const val = props?.val?._value;
@@ -343,7 +354,7 @@ const HeatmapGlobe = () => {
                                 <strong>Subregion:</strong> {props.subregion?._value}
                             </p>
                             <p style={{ margin: "8px 0", fontSize: "14px" }}>
-                                <strong>Dementia Rate:</strong> {val?.toFixed(1)} per 100k
+                                <strong>Dementia Rate:</strong> {val != null ? (<div>{val?.toFixed(1)} occurrences per 100k</div>) : (<div>No data available.</div>)}
                             </p>
 
                             <div style={{ fontSize: "13px", marginTop: "16px", fontStyle: "italic" }}>
